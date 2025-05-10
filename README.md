@@ -6,9 +6,12 @@ A command-line interface for managing Konflux issues, written in Go. This CLI to
 
 - List, filter, and search issues
 - Get detailed information about specific issues
+- Resovle issues manually
 - Works as a standalone CLI and as a kubectl plugin
 - Automatically detects and uses the current kubectl namespace
 - Configurable API endpoint
+- Colorized output for better readability
+- Support for machine-readable output formats (JSON, YAML)
 
 ## Installation
 
@@ -48,7 +51,7 @@ konflux-issues list -n team-alpha -t build
 konflux-issues list -n team-alpha -s critical
 
 # Get details for a specific issue
-konflux-issues details -i failed-build-frontend -n team-alpha
+konflux-issues details -i <id> -n team-alpha
 
 # Configure the API URL
 konflux-issues config set-api-url http://localhost:3000/api/v1
@@ -70,7 +73,28 @@ kubectl issues list
 kubectl issues list -n team-alpha
 
 # Get details for an issue
-kubectl issues details -i failed-build-frontend
+kubectl issues details -i <id>
+
+# Search for issues
+kubectl issues search "dependency"
+
+# Resolve an issue
+kubectl issues resolve -i <id>
+```
+
+## Output Formats
+
+The CLI supports three output formats:
+
+1. **Table (default)**: Human-readable tabular format
+2. **JSON**: Machine-readable JSON format
+3. **YAML**: Machine-readable YAML format
+
+Specify the output format using the `-o` or `--output` flag:
+
+```bash
+konflux-issues list -n team-alpha -o json
+konflux-issues details -i failed-build-frontend -o yaml
 ```
 
 ## Configuration

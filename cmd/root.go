@@ -20,7 +20,8 @@ var (
 	resourceType string
 	limit        int
 	issueID      string
-	keyword      string
+	term         string
+	outputFormat string
 	unresolved   bool
 )
 
@@ -77,8 +78,15 @@ var listCmd = &cobra.Command{
 			return nil
 		}
 
-		// Print issues
-		formatter.PrintIssuesTable(issues)
+		// Print issues based on output format
+		if outputFormat == "json" {
+			formatter.PrintIssuesJSON(issues)
+		} else if outputFormat == "yaml" {
+			formatter.PrintIssuesYAML(issues)
+		} else {
+			formatter.PrintIssuesTable(issues)
+		}
+
 		return nil
 	},
 }
@@ -113,8 +121,15 @@ var detailsCmd = &cobra.Command{
 			return err
 		}
 
-		// Print issue details
-		formatter.PrintIssueDetails(issue)
+		// Print issues based on output format
+		if outputFormat == "json" {
+			formatter.PrintIssuesDetailsJSON(issue)
+		} else if outputFormat == "yaml" {
+			formatter.PrintIssueDetailsYAML(issue)
+		} else {
+			formatter.PrintIssueDetails(issue)
+		}
+
 		return nil
 	},
 }
@@ -141,7 +156,7 @@ var resolveCmd = &cobra.Command{
 		// Create API client
 		client := api.New()
 
-		fmt.Printf("Resolving issue %s in namespace %s...\n")
+		fmt.Printf("Resolving issue %s in namespace %s...\n", issueID, namespace)
 		err := client.ResolveIssue(issueID, namespace)
 		if err != nil {
 			return fmt.Errorf("error resolving issue: %w", err)
@@ -153,8 +168,8 @@ var resolveCmd = &cobra.Command{
 }
 
 var searchCmd = &cobra.Command{
-	Use:   "search [keyword]",
-	Short: "Search for issues by keyword",
+	Use:   "search [term]",
+	Short: "Search for issues by term",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If no namespace provided, try to get from kubectl context
@@ -167,8 +182,8 @@ var searchCmd = &cobra.Command{
 			}
 		}
 
-		// Get keyword from args
-		keyword := args[0]
+		// Get term from args
+		term := args[0]
 
 		// Create API client
 		client := api.New()
@@ -180,7 +195,7 @@ var searchCmd = &cobra.Command{
 			"severity":     severity,
 			"state":        state,
 			"resourceType": resourceType,
-			"search":       keyword,
+			"search":       term,
 		}
 
 		// Apply unresolved filter if requested
@@ -189,7 +204,7 @@ var searchCmd = &cobra.Command{
 		}
 
 		// Search for issues
-		fmt.Printf("Searching for issues with keyword '%s' in namespace %s...\n", keyword, namespace)
+		fmt.Printf("Searching for issues with term'%s' in namespace %s...\n", term, namespace)
 		issues, err := client.GetIssues(namespace, filters)
 		if err != nil {
 			return fmt.Errorf("error searching issues: %w", err)
@@ -197,12 +212,18 @@ var searchCmd = &cobra.Command{
 
 		// Handle empty result
 		if len(issues) == 0 {
-			fmt.Printf("No issues found for keyword '%s' in namespace %s.\n", keyword, namespace)
+			fmt.Printf("No issues found for term '%s' in namespace %s.\n", term, namespace)
 			return nil
 		}
 
-		// Print issue details
-		formatter.PrintIssuesTable(issues)
+		// Print issues based on output format
+		if outputFormat == "json" {
+			formatter.PrintIssuesJSON(issues)
+		} else if outputFormat == "yaml" {
+			formatter.PrintIssuesYAML(issues)
+		} else {
+			formatter.PrintIssuesTable(issues)
+		}
 
 		return nil
 	},
@@ -257,23 +278,40 @@ func init() {
 	// Add commands
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(detailsCmd)
+	rootCmd.AddCommand(resolveCmd)
+	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(configCmd)
 
 	configCmd.AddCommand(setAPIURLCmd)
 	configCmd.AddCommand(resetConfigCmd)
 
+	// Add common flags for all commands
+	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check")
+	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "", "Output format (table, json, yaml)")
+
 	// Add list command flags
-	listCmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check")
 	listCmd.Flags().StringVarP(&issueType, "type", "t", "", "Filter by issue type")
 	listCmd.Flags().StringVarP(&severity, "severity", "s", "", "Filter by severity")
 	listCmd.Flags().StringVar(&state, "state", "", "Filter by state (ACTIVE or RESOLVED)")
 	listCmd.Flags().StringVarP(&resourceType, "resource-type", "r", "", "Filter by resource type")
 	listCmd.Flags().IntVar(&limit, "limit", 20, "Limit number of results")
+	listCmd.Flags().BoolVar(&unresolved, "unresolved", false, "Show only unresolved issues")
 
 	// Add details command flags
-	detailsCmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace")
 	detailsCmd.Flags().StringVarP(&issueID, "id", "i", "", "Issue ID")
 	detailsCmd.MarkFlagRequired("id")
+
+	// Add resolve command flags
+	resolveCmd.Flags().StringVarP(&issueID, "id", "i", "", "Issue ID")
+	resolveCmd.MarkFlagRequired("id")
+
+	// Add search command flags
+	searchCmd.Flags().StringVarP(&issueType, "type", "t", "", "Filter by issue type")
+	searchCmd.Flags().StringVarP(&severity, "severity", "s", "", "Filter by severity")
+	searchCmd.Flags().StringVar(&state, "state", "", "Filter by state (ACTIVE or RESOLVED)")
+	searchCmd.Flags().StringVarP(&resourceType, "resource-type", "r", "", "Filter by resource type")
+	searchCmd.Flags().IntVar(&limit, "limit", 20, "Limit number of results")
+	searchCmd.Flags().BoolVarP(&unresolved, "unresolved", "u", false, "Show only unresolved issues")
 }
 
 // getCurrentKubeNamespace attempts to get the current namespace from kubectl context

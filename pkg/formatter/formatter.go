@@ -1,6 +1,7 @@
 package formatter
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/CryptoRodeo/issues-cli/pkg/models"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
+	"gopkg.in/yaml.v3"
 )
 
 // Colors for severity levels
@@ -18,6 +20,10 @@ var (
 	minorColor    = color.New(color.FgBlue).SprintFunc()
 	infoColor     = color.New(color.FgGreen).SprintFunc()
 	boldColor     = color.New(color.Bold).SprintFunc()
+	successColor  = color.New(color.FgGreen).SprintFunc()
+	errorColor    = color.New(color.FgRed).SprintFunc()
+	warningColor  = color.New(color.FgYellow).SprintFunc()
+	neutralColor  = color.New(color.FgCyan).SprintFunc()
 )
 
 // GetSeverityColor returns the colored string for a severity level
@@ -33,6 +39,17 @@ func GetSeverityColor(severity string) string {
 		return infoColor(severity)
 	default:
 		return severity
+	}
+}
+
+func GetStateColor(state string) string {
+	switch strings.ToUpper(state) {
+	case "ACTIVE":
+		return warningColor(state)
+	case "RESOLVED":
+		return successColor(state)
+	default:
+		return state
 	}
 }
 
@@ -66,12 +83,16 @@ func PrintIssuesTable(issues []models.Issue) {
 		detectedAt := issue.DetectedAt.Format("2006-01-02 15:04:05")
 		id := issue.ID
 
+		// Apply color formatting based on issue properties
+		stateFormatted := GetStateColor(issue.State)
+		severityFormatted := GetSeverityColor(issue.Severity)
+
 		table.Append([]string{
 			id,
 			issue.Title,
 			issue.IssueType,
-			GetSeverityColor(issue.Severity),
-			issue.State,
+			severityFormatted,
+			stateFormatted,
 			detectedAt,
 		})
 	}
@@ -89,7 +110,7 @@ func PrintIssueDetails(issue *models.Issue) {
 	fmt.Printf("%s:\n%s\n", boldColor("Description"), issue.Description)
 	fmt.Printf("%s: %s\n", boldColor("Type"), issue.IssueType)
 	fmt.Printf("%s: %s\n", boldColor("Severity"), GetSeverityColor(issue.Severity))
-	fmt.Printf("%s: %s\n", boldColor("State"), issue.State)
+	fmt.Printf("%s: %s\n", boldColor("State"), GetStateColor(issue.State))
 	fmt.Printf("%s: %s\n", boldColor("Detected At"), formatTime(issue.DetectedAt))
 
 	if issue.ResolvedAt != nil {
@@ -120,6 +141,46 @@ func PrintIssueDetails(issue *models.Issue) {
 			}
 		}
 	}
+}
+
+// PrintIssuesJSON prints issues in JSON format
+func PrintIssuesJSON(issues []models.Issue) {
+	data, err := json.MarshalIndent(issues, "", " ")
+	if err != nil {
+		fmt.Printf("Error formatting JSON: %v\n", err)
+		return
+	}
+	fmt.Println(string(data))
+}
+
+// PrintIssueDetailsJSON pritns issue details in JSON format
+func PrintIssuesDetailsJSON(issue *models.Issue) {
+	data, err := json.MarshalIndent(issue, "", " ")
+	if err != nil {
+		fmt.Printf("Error fomratting JSON: %v\n", err)
+		return
+	}
+	fmt.Println(string(data))
+}
+
+// PrintIssuesYAML prints issues in YAML format
+func PrintIssuesYAML(issues []models.Issue) {
+	data, err := yaml.Marshal(issues)
+	if err != nil {
+		fmt.Printf("Error formatting YAML: %v\n", err)
+		return
+	}
+	fmt.Println(string(data))
+}
+
+// PrintIssueDetailsYAML prints issue details in YAML format
+func PrintIssueDetailsYAML(issue *models.Issue) {
+	data, err := yaml.Marshal(issue)
+	if err != nil {
+		fmt.Printf("Error formatting YAML:%v\n", err)
+		return
+	}
+	fmt.Println(string(data))
 }
 
 // Helper function to format time

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -101,19 +100,12 @@ func (c *Client) GetIssueDetails(id, namespace string) (*models.Issue, error) {
 
 // ResolveIssue marks an issue as resolved
 func (c *Client) ResolveIssue(id, namespace string) error {
-	// Prepare request payload
-	payload := map[string]interface{}{
-		"namespace": namespace,
-	}
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("failed to prepare request: %w", err)
-	}
+	params := url.Values{}
+	params.Add("namespace", namespace)
 
 	// Create request
-	url := fmt.Sprintf("%s/issues/%s/resolve", c.baseURL, id)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payloadBytes))
+	url := fmt.Sprintf("%s/issues/%s/resolve?%s", c.baseURL, id, params.Encode())
+	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return c.handleRequestError(err)
 	}
