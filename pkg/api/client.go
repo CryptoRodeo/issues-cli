@@ -63,35 +63,6 @@ func (c *Client) GetIssues(namespace string, filters map[string]string) ([]model
 	return response.Data, nil
 }
 
-// GetIssueStats retrieves issue statistics for a namespace
-func (c *Client) GetIssueStats(namespace string) (*models.IssueStats, error) {
-	// Build query parameters
-	params := url.Values{}
-	params.Add("namespace", namespace)
-
-	// Make request
-	url := fmt.Sprintf("%s/issues/stats?%s", c.baseURL, params.Encode())
-	resp, err := c.httpClient.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get issue stats: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check response status
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
-	}
-
-	// Parse response
-	var stats models.IssueStats
-	if err := json.NewDecoder(resp.Body).Decode(&stats); err != nil {
-		return nil, fmt.Errorf("failed to parse issue stats: %w", err)
-	}
-
-	return &stats, nil
-}
-
 // GetIssueDetails retrieves details for a specific issue
 func (c *Client) GetIssueDetails(id, namespace string) (*models.Issue, error) {
 	// Build query parameters

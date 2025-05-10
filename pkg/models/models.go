@@ -51,14 +51,6 @@ type Related struct {
 	Source   *Issue `json:"source,omitempty"`
 }
 
-// IssueStats represents statistics about issues
-type IssueStats struct {
-	TotalIssues          int             `json:"totalIssues"`
-	ActiveCriticalIssues int             `json:"activeCriticalIssues"`
-	IssuesByType         []TypeCount     `json:"issuesByType"`
-	IssuesBySeverity     []SeverityCount `json:"issuesBySeverity"`
-}
-
 // TypeCount represents the count of issues by type
 type TypeCount struct {
 	IssueType string `json:"issueType"`
