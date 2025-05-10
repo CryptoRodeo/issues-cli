@@ -20,6 +20,8 @@ var (
 	resourceType string
 	limit        int
 	issueID      string
+	keyword      string
+	unresolved   bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -43,6 +45,11 @@ var listCmd = &cobra.Command{
 			} else {
 				return fmt.Errorf("namespace is required")
 			}
+		}
+
+		// Apply unresolved filter if requested
+		if unresolved {
+			state = "ACTIVE"
 		}
 
 		// Create API client
@@ -108,6 +115,95 @@ var detailsCmd = &cobra.Command{
 
 		// Print issue details
 		formatter.PrintIssueDetails(issue)
+		return nil
+	},
+}
+
+var resolveCmd = &cobra.Command{
+	Use:   "resolve",
+	Short: "Resolve a specific issue",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// If no namespace provided, try to get from kubectl context
+		if namespace == "" {
+			kubectlNamespace, err := getCurrentKubeNamespace()
+			if err == nil {
+				namespace = kubectlNamespace
+			} else {
+				return fmt.Errorf("namespace is required")
+			}
+		}
+
+		// Check for issue ID
+		if issueID == "" {
+			return fmt.Errorf("issue ID is required")
+		}
+
+		// Create API client
+		client := api.New()
+
+		fmt.Printf("Resolving issue %s in namespace %s...\n")
+		err := client.ResolveIssue(issueID, namespace)
+		if err != nil {
+			return fmt.Errorf("error resolving issue: %w", err)
+		}
+
+		fmt.Printf("Issue %s has been resolved successfully.\n", issueID)
+		return nil
+	},
+}
+
+var searchCmd = &cobra.Command{
+	Use:   "search [keyword]",
+	Short: "Search for issues by keyword",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// If no namespace provided, try to get from kubectl context
+		if namespace == "" {
+			kubectlNamespace, err := getCurrentKubeNamespace()
+			if err == nil {
+				namespace = kubectlNamespace
+			} else {
+				return fmt.Errorf("namespace is required")
+			}
+		}
+
+		// Get keyword from args
+		keyword := args[0]
+
+		// Create API client
+		client := api.New()
+
+		// Build filters
+		filters := map[string]string{
+			"limit":        fmt.Sprintf("%d", limit),
+			"issueType":    issueType,
+			"severity":     severity,
+			"state":        state,
+			"resourceType": resourceType,
+			"search":       keyword,
+		}
+
+		// Apply unresolved filter if requested
+		if unresolved {
+			filters["state"] = "ACTIVE"
+		}
+
+		// Search for issues
+		fmt.Printf("Searching for issues with keyword '%s' in namespace %s...\n", keyword, namespace)
+		issues, err := client.GetIssues(namespace, filters)
+		if err != nil {
+			return fmt.Errorf("error searching issues: %w", err)
+		}
+
+		// Handle empty result
+		if len(issues) == 0 {
+			fmt.Printf("No issues found for keyword '%s' in namespace %s.\n", keyword, namespace)
+			return nil
+		}
+
+		// Print issue details
+		formatter.PrintIssuesTable(issues)
+
 		return nil
 	},
 }
