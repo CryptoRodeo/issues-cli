@@ -65,9 +65,6 @@ func PrintIssuesTable(issues []models.Issue) {
 	for _, issue := range issues {
 		detectedAt := issue.DetectedAt.Format("2006-01-02 15:04:05")
 		id := issue.ID
-		if len(id) > 10 {
-			id = WrapText(id, 10)
-		}
 
 		table.Append([]string{
 			id,
@@ -128,27 +125,4 @@ func PrintIssueDetails(issue *models.Issue) {
 // Helper function to format time
 func formatTime(t time.Time) string {
 	return t.Format("2006-01-02 15:04:05")
-}
-
-// WrapText wraps text to a specific width
-func WrapText(text string, width int) string {
-	words := strings.Fields(text)
-	if len(words) == 0 {
-		return ""
-	}
-
-	var lines []string
-	line := words[0]
-
-	for _, word := range words[1:] {
-		if len(line)+len(word)+1 <= width {
-			line += " " + word
-		} else {
-			lines = append(lines, line)
-			line = word
-		}
-	}
-
-	lines = append(lines, line)
-	return strings.Join(lines, "\n")
 }
