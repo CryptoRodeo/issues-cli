@@ -1,4 +1,4 @@
-# Konflux Issues CLI
+# Issues CLI
 
 A command-line interface for managing Konflux issues, written in Go. This CLI tool provides a simple and efficient way to interact with the Konflux Issues API.
 
