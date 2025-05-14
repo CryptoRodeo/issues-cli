@@ -21,19 +21,14 @@ A command-line interface for managing Konflux issues, written in Go. This CLI to
 # Requires Go 1.16+
 git clone https://github.com/CryptoRodeo/issues-cli.git
 cd issues-cli
-go build -o konflux-issues main.go
-chmod +x konflux-issues
-sudo mv konflux-issues /usr/local/bin/
+make build
+make install
 ```
 
 ### Setup as kubectl plugin
 
 ```bash
-# Create a symlink with the kubectl- prefix
-ln -s /usr/local/bin/konflux-issues /usr/local/bin/kubectl-issues
-
-# Verify plugin installation
-kubectl plugin list
+make kubectl-plugin
 ```
 
 ## Usage
